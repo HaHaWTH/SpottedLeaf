@@ -2,9 +2,9 @@ name: Build Leaf 1.20.6
 
 on:
   push:
-    branches: [ "ver/1.20.6" ]
+    branches: [ "async/1.20.6" ]
   pull_request:
-    branches: [ "ver/1.20.6" ]
+    branches: [ "async/1.20.6" ]
 
 jobs:
   build:
@@ -55,8 +55,8 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: marvinpinto/action-automatic-releases@master
         with:
-          title: "Leaf 1.20.6"
-          automatic_release_tag: "ver-1.20.6"
+          title: "Leaf 1.20.6 with Multi-thread world ticking"
+          automatic_release_tag: "mt-1.20.6"
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           files: "./leaf-1.20.6-*.jar"
           prerelease: false
