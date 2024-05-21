@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: HaHaWTH <fsjk947@gmail.com>
-Date: Sun, 12 May 2024 19:17:54 +0800
-Subject: [PATCH] Multi thread world ticking
+Date: Tue, 21 May 2024 21:29:37 +0800
+Subject: [PATCH] Multi-thread-world-ticking
 
 
 diff --git a/src/main/java/io/papermc/paper/plugin/manager/PaperEventManager.java b/src/main/java/io/papermc/paper/plugin/manager/PaperEventManager.java
@@ -18,7 +18,7 @@ index dadc5ee6a79a47cbebcc8e8c943c2147cc16d732..8e765794958b51b73f567997b5b73e8f
              if (org.dreeam.leaf.config.modules.async.MultithreadedTracker.enabled) {
                  net.minecraft.server.MinecraftServer.getServer().scheduleOnMain(event::callEvent);
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f0170c9d6c1a 100644
+index c7f44250b1801c581420f93d357d64f615949691..62322f7ac930142f909271b254f2ceb7b3489576 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -10,6 +10,7 @@ import com.mojang.authlib.GameProfile;
@@ -29,7 +29,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
  import com.mojang.logging.LogUtils;
  import it.unimi.dsi.fastutil.longs.LongIterator;
  import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-@@ -27,23 +28,10 @@ import java.nio.file.Files;
+@@ -27,15 +28,9 @@ import java.nio.file.Files;
  import java.nio.file.LinkOption;
  import java.nio.file.Path;
  import java.security.KeyPair;
@@ -43,20 +43,12 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
 -import java.util.Locale;
 -import java.util.Map;
 +import java.util.*;
- import java.util.Map.Entry;
--import java.util.Objects;
--import java.util.Optional;
--import java.util.Set;
--import java.util.UUID;
--import java.util.concurrent.CompletableFuture;
--import java.util.concurrent.Executor;
--import java.util.concurrent.RejectedExecutionException;
 +import java.util.concurrent.*;
 +import java.util.concurrent.atomic.AtomicBoolean;
- import java.util.concurrent.atomic.AtomicReference;
- import java.util.function.BooleanSupplier;
- import java.util.function.Consumer;
-@@ -135,13 +123,13 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
+ import java.util.Map.Entry;
+ import java.util.Objects;
+ import java.util.Optional;
+@@ -134,13 +129,13 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
  import net.minecraft.world.level.storage.WorldData;
  import net.minecraft.world.phys.Vec2;
  import net.minecraft.world.phys.Vec3;
@@ -71,7 +63,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
  // import jline.console.ConsoleReader; // Paper
  import joptsimple.OptionSet;
  import net.minecraft.nbt.NbtException;
-@@ -238,6 +226,11 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -235,6 +230,11 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      private int playerIdleTimeout;
      private final long[] tickTimesNanos;
      private long aggregatedTickTimesNanos;
@@ -83,7 +75,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
      // Paper start - Add tick times API and /mspt command
      public final TickTimes tickTimes5s = new TickTimes(100);
      public final TickTimes tickTimes10s = new TickTimes(200);
-@@ -335,12 +328,20 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -332,12 +332,20 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          return s0;
      }
  
@@ -104,7 +96,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
          this.running = true;
          this.ticksUntilAutosave = 6000;
          this.tickTimesNanos = new long[100];
-@@ -1031,6 +1032,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1030,6 +1038,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          // Paper start - move final shutdown items here
          LOGGER.info("Closing Thread Pool");
          Util.shutdownExecutors(); // Paper
@@ -112,7 +104,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
          LOGGER.info("Closing Server");
          try {
              net.minecrell.terminalconsole.TerminalConsoleAppender.close(); // Paper - Use TerminalConsoleAppender
-@@ -1469,6 +1471,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1468,6 +1477,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      }
  
      public final void executeMidTickTasks() {
@@ -120,7 +112,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
          org.spigotmc.AsyncCatcher.catchOp("mid tick chunk task execution");
          long startTime = System.nanoTime();
          if ((startTime - lastMidTickExecute) <= CHUNK_TASK_QUEUE_BACKOFF_MIN_TIME || (startTime - lastMidTickExecuteFailure) <= TASK_EXECUTION_FAILURE_BACKOFF) {
-@@ -1731,7 +1734,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1730,7 +1740,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
          // Send time updates to everyone, it will get the right time from the world the player is in.
          // Paper start - Perf: Optimize time updates
@@ -129,7 +121,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
              final boolean doDaylight = level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT);
              final long dayTime = level.getDayTime();
              long worldTime = level.getGameTime();
-@@ -1746,18 +1749,20 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1745,18 +1755,20 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
                      new ClientboundSetTimePacket(worldTime, playerTime, doDaylight);
                  entityplayer.connection.send(packet); // Add support for per player time
              }
@@ -157,7 +149,7 @@ index 76837c0bd930980519faf8a49e639f35b823e031..f3e0a32dfcd3fcf4fc010320f294f017
  
              /* Drop global time updates
              if (this.tickCount % 20 == 0) {
-@@ -1766,22 +1771,48 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1765,22 +1777,48 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
              // CraftBukkit end */
  
              try {
@@ -366,10 +358,10 @@ index 84b3a37fe2a4597312c26abded08a45e7218cd17..914dd7808c6c87e867d540b64fb3fb9c
          } finally {
              if (!bl) {
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index c0089483f2085b60fa34884885fa83915d5fc143..e299072ac1d53ac4a81fdf5dcbe373ef415ca2b8 100644
+index 386fd36c56787966537df63337534c039e6858d0..f5ed6fd9412894498fc567cef3caba089592de28 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
-@@ -3961,8 +3961,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+@@ -3967,8 +3967,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
                  }).orElse(null); // CraftBukkit - decompile error
              }
          } else {
@@ -477,7 +469,7 @@ index 0000000000000000000000000000000000000000..b627e13b94e326aad733afda38fb2a12
 +
 diff --git a/src/main/java/org/dreeam/leaf/config/modules/async/MultiThreadedWorldTicking.java b/src/main/java/org/dreeam/leaf/config/modules/async/MultiThreadedWorldTicking.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..47bb0bf6690bf838df7b342e33d050b5cd127d6d
+index 0000000000000000000000000000000000000000..384859afea156a388a99b0b213caeb0604bb2149
 --- /dev/null
 +++ b/src/main/java/org/dreeam/leaf/config/modules/async/MultiThreadedWorldTicking.java
 @@ -0,0 +1,36 @@
@@ -506,7 +498,7 @@ index 0000000000000000000000000000000000000000..47bb0bf6690bf838df7b342e33d050b5
 +    @Override
 +    public void onLoaded(CommentedFileConfig config) {
 +        config.setComment("async.multi_thread_world_ticking", """
-+                WARNING! Enabling multi-thread world ticking is not recommend currently.
++                WARNING! Multi-thread world ticking is not stable currently.
 +                You may encounter a bunch of issues""");
 +
 +        if (multiThreadWorldTickingThreads < 0)
