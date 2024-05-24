@@ -45,11 +45,17 @@ jobs:
 #          ORG_GRADLE_PROJECT_leafUsername: ${{ secrets.REPO_USER }}
 #          ORG_GRADLE_PROJECT_leafPassword: ${{ secrets.REPO_PASSWORD }}
 
-      - name: Upload Leaf
+      - name: Upload Mojmap Leaf
         uses: actions/upload-artifact@main
         with:
-          name: Leaf 1.20.6
-          path: ./leaf-1.20.6-*.jar
+          name: Leaf 1.20.6 (Mojmap)
+          path: ./leaf-1.20.6-mojmap.jar
+
+      - name: Upload Reobf Leaf
+        uses: actions/upload-artifact@main
+        with:
+          name: Leaf 1.20.6 (Reobf)
+          path: ./leaf-1.20.6-reobf.jar
 
       - name: Release Leaf
         if: github.event_name != 'pull_request'
