@@ -7,10 +7,10 @@ Co-authored by: Martijn Muijsers <martijnmuijsers@live.nl>
 Co-authored by: MachineBreaker <machinebreaker>
 
 diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
-index a3adc109213885a193f7131405bd4a2f6a90f9be..e971ef13754402f3de118ea24cb9f83b564cd65e 100644
+index 968186bef3ff92cfdc23241d67233407b629263e..25e93a0a58b0ecf02f2669fc8f01ef2f2f938dc7 100644
 --- a/src/main/java/net/minecraft/world/level/Level.java
 +++ b/src/main/java/net/minecraft/world/level/Level.java
-@@ -388,17 +388,19 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+@@ -380,17 +380,19 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
          for (int i = 0, len = entities.size(); i < len; ++i) {
              Entity entity = entities.get(i);
  

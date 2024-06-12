@@ -6,32 +6,16 @@ Subject: [PATCH] Purpur API Changes
 Original license: MIT
 Original project: https://github.com/PurpurMC/Purpur
 
-Commit: 3d2569397afa45a8988762081cdff594e96a2c6c
+Commit: 79d199c7f07d4acd9af6a9858cd895722ce16429
 
 Patches below are removed in this patch:
 Pufferfish-API-Changes.patch
 Fix-pufferfish-issues.patch
 Build-System-Changes.patch
+Clean-up-version-command-output.patch
 Remove-Timings.patch
 Add-log-suppression-for-LibraryLoader.patch
 
-diff --git a/src/main/java/com/destroystokyo/paper/util/VersionFetcher.java b/src/main/java/com/destroystokyo/paper/util/VersionFetcher.java
-index a736d7bcdc5861a01b66ba36158db1c716339346..22fc165fd9c95f0f3ae1be7a0857e48cc50fad5b 100644
---- a/src/main/java/com/destroystokyo/paper/util/VersionFetcher.java
-+++ b/src/main/java/com/destroystokyo/paper/util/VersionFetcher.java
-@@ -26,6 +26,12 @@ public interface VersionFetcher {
-     @NotNull
-     Component getVersionMessage(@NotNull String serverVersion);
- 
-+    // Purpur start
-+    default int distance() {
-+        return 0;
-+    }
-+    // Purpur end
-+
-     class DummyVersionFetcher implements VersionFetcher {
- 
-         @Override
 diff --git a/src/main/java/io/papermc/paper/ServerBuildInfo.java b/src/main/java/io/papermc/paper/ServerBuildInfo.java
 index 957f15a91f6aa1235c12b82079e32bb42449c78d..9fa8d7fac5bf415b40c3a9a38108fa5476ed7619 100644
 --- a/src/main/java/io/papermc/paper/ServerBuildInfo.java
@@ -51,7 +35,7 @@ index 957f15a91f6aa1235c12b82079e32bb42449c78d..9fa8d7fac5bf415b40c3a9a38108fa54
      /**
       * The brand id for Leaf.
 diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
-index dec4ad04ac3dc2e869ea78f354cdf37d7a305a55..15274b07fea8e25e8acebbc0e688013cb7498a42 100644
+index d8cd53f7e45d3b5276aa360b10ff05ce7275a3a3..8c4619de2a52003a9684cc95f920b12e40944f27 100644
 --- a/src/main/java/org/bukkit/Bukkit.java
 +++ b/src/main/java/org/bukkit/Bukkit.java
 @@ -2980,4 +2980,127 @@ public final class Bukkit {
@@ -273,10 +257,10 @@ index 918a045165cdcde264bc24082b7afebb407271de..687d11619379aead7f665d4a5f8f8bcc
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/Material.java b/src/main/java/org/bukkit/Material.java
-index 81f9ad99699a78b97e4accaaf1a98eacf29493ce..e3e996d932db689ba62a43f7f01d6f003f8337d3 100644
+index 7509b61dfdc0a6675256970cb850b08f9e814580..c1986ca90c3adb81daca4f72b62cda65e5465bff 100644
 --- a/src/main/java/org/bukkit/Material.java
 +++ b/src/main/java/org/bukkit/Material.java
-@@ -5701,4 +5701,40 @@ public enum Material implements Keyed, Translatable, net.kyori.adventure.transla
+@@ -5733,4 +5733,40 @@ public enum Material implements Keyed, Translatable, net.kyori.adventure.transla
          }
          return Registry.BLOCK.get(material.key);
      }
@@ -318,7 +302,7 @@ index 81f9ad99699a78b97e4accaaf1a98eacf29493ce..e3e996d932db689ba62a43f7f01d6f00
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/OfflinePlayer.java b/src/main/java/org/bukkit/OfflinePlayer.java
-index 30298a629b39bd43ce14b414fc697b2dfcbea89c..ce00af9121de7a910aaea4e0685a06d4cf31b4e3 100644
+index 3993fecec5b4c2bbd77e175a168afcad571ce4d1..d0206c9c2f423a9b77237d9a005b9ee139dae70f 100644
 --- a/src/main/java/org/bukkit/OfflinePlayer.java
 +++ b/src/main/java/org/bukkit/OfflinePlayer.java
 @@ -557,4 +557,106 @@ public interface OfflinePlayer extends ServerOperator, AnimalTamer, Configuratio
@@ -429,7 +413,7 @@ index 30298a629b39bd43ce14b414fc697b2dfcbea89c..ce00af9121de7a910aaea4e0685a06d4
 +    // Purpur end - OfflinePlayer API
  }
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index 52bd9bab6315a3b962f4cab215a979a802bec182..0d38fe01e2a59eb50fec8597f634adaba672ff2d 100644
+index 12dd25921625db145287edba783ae6d7e904ce80..9ed8f4e3e3d33e4bdefc7db85d5f65e39a971041 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
 @@ -2310,6 +2310,18 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
@@ -557,7 +541,7 @@ index 52bd9bab6315a3b962f4cab215a979a802bec182..0d38fe01e2a59eb50fec8597f634adab
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
-index 97f97ea5c6aa513c439f86a9c82821e0f7d9cd1e..83a5b68c785a88594e6e3824ed282844086f7f1a 100644
+index 26622cafbb9811fafe18d5dd9b25f56960154772..7707963157ef98eedbf7143a0dbd9c22580a426d 100644
 --- a/src/main/java/org/bukkit/World.java
 +++ b/src/main/java/org/bukkit/World.java
 @@ -4249,6 +4249,86 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
@@ -709,34 +693,6 @@ index c3a9cf65db73ed534bf20996c7f05b5eb0aaebe1..83f84a76cbfdf5138ecccf3a886d3815
              } // target.timings.stopTiming(); // Spigot // Paper
          } catch (CommandException ex) {
              server.getPluginManager().callEvent(new com.destroystokyo.paper.event.server.ServerExceptionEvent(new com.destroystokyo.paper.exception.ServerCommandException(ex, target, sender, args))); // Paper
-diff --git a/src/main/java/org/bukkit/command/defaults/VersionCommand.java b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
-index fd5d9881abfd930bb883120f018f76dc78b62b14..d3dadad49df09e85c724c93e8cc88da2c985e9b4 100644
---- a/src/main/java/org/bukkit/command/defaults/VersionCommand.java
-+++ b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
-@@ -214,7 +214,7 @@ public class VersionCommand extends BukkitCommand {
-         String version = Bukkit.getVersion();
-         // Paper start
-         if (version.startsWith("null")) { // running from ide?
--            setVersionMessage(Component.text("Unknown version, custom build?", NamedTextColor.YELLOW));
-+            setVersionMessage(Component.text("* Unknown version, custom build?", NamedTextColor.RED)); // Purpur
-             return;
-         }
-         setVersionMessage(getVersionFetcher().getVersionMessage(version));
-@@ -255,9 +255,11 @@ public class VersionCommand extends BukkitCommand {
-     // Paper start
-     private void setVersionMessage(final @NotNull Component msg) {
-         lastCheck = System.currentTimeMillis();
--        final Component message = Component.textOfChildren(
--            Component.text(Bukkit.getVersionMessage(), NamedTextColor.WHITE),
--            Component.newline(),
-+        // Purpur start
-+        int distance = getVersionFetcher().distance();
-+        final Component message = Component.join(net.kyori.adventure.text.JoinConfiguration.separator(Component.newline()),
-+            ChatColor.parseMM("<grey>Current: %s%s*", distance == 0 ? "<green>" : distance > 0 ? "<yellow>" : "<red>", Bukkit.getVersion()),
-+            // Purpur end
-             msg
-         );
-         this.versionMessage = Component.text()
 diff --git a/src/main/java/org/bukkit/enchantments/EnchantmentTarget.java b/src/main/java/org/bukkit/enchantments/EnchantmentTarget.java
 index 455ff52d90565838fe7640c3f045b27082a6c2f1..45f5493eebfecf56b7c0ef4659c078dfc62c0612 100644
 --- a/src/main/java/org/bukkit/enchantments/EnchantmentTarget.java
@@ -805,10 +761,10 @@ index 138d2530de2410f4a9424dabd3e5ce0cd1c1dcd2..10a8d64ad2da0be2c14f34c3e7d1957c
      // Paper start
      /**
 diff --git a/src/main/java/org/bukkit/entity/Entity.java b/src/main/java/org/bukkit/entity/Entity.java
-index 62e3793903905b94eb1a120345015149abb33713..07b8c0dd049ff783fd2e408be634642479bf8b1e 100644
+index 725ef320f929d5e3d141c1ed3246d73a7d741f31..2d12c70b0baa50504619c8e37881a11a56d7df2c 100644
 --- a/src/main/java/org/bukkit/entity/Entity.java
 +++ b/src/main/java/org/bukkit/entity/Entity.java
-@@ -1155,4 +1155,55 @@ public interface Entity extends Metadatable, CommandSender, Nameable, Persistent
+@@ -1159,4 +1159,55 @@ public interface Entity extends Metadatable, CommandSender, Nameable, Persistent
       */
      @NotNull String getScoreboardEntryName();
      // Paper end - entity scoreboard name
@@ -957,7 +913,7 @@ index bcc6ba95bd21c7972865838c636a03f50b6c1f1a..c3fcd8dd7dbb1e1a18e17c014c1e6411
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index b777e530122549455dcce6fac8d4a151c1c0af42..61a046584acf48693489ff551a0dd4c4b16af9ff 100644
+index 5c29956c6db53440322330ff723c7087193641f1..544b1d8aa5665fd2567605014adee6222d2cb312 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -1447,4 +1447,27 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
@@ -1014,7 +970,7 @@ index bc84b892cae5fe7019a3ad481e9da79956efa1fe..48eb5b00c460cccde29d327cef1d63fc
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 2d63d61fcfe87c4f07b1d752facbb1bae6f2b0ca..d09618735f42fc3a0f9fd0de15499860f96ce0b3 100644
+index dbd6eba668cd20a72ca6df9968c69743bca116ee..7e0aab5a34b45a032b73e566ce94bbb86a14ecf0 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
 @@ -3816,4 +3816,123 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
