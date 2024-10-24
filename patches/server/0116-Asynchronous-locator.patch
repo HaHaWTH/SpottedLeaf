@@ -132,7 +132,7 @@ index ef0124ceb7cafd58c01c7f0b4b542f38a383ab88..3646810c21641559ee81084da8ac290c
  
              if (this.dolphin.closeToNextPos() || this.dolphin.getNavigation().isDone()) {
 diff --git a/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java b/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java
-index 00ed0d5ad535faa36111ab28bb0cf1317eb067ec..b5a2a384c4113dff49507eb686dd21292a6a1321 100644
+index 00ed0d5ad535faa36111ab28bb0cf1317eb067ec..477aa4f069ab18de2c764f74dc26db52a95d6206 100644
 --- a/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java
 +++ b/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java
 @@ -132,12 +132,35 @@ public abstract class ChunkGenerator {
@@ -147,7 +147,7 @@ index 00ed0d5ad535faa36111ab28bb0cf1317eb067ec..b5a2a384c4113dff49507eb686dd2129
 +            // Leaf start - Async locator - Ensure event is called on server thread
 +            if (org.dreeam.leaf.config.modules.async.AsyncLocator.enabled &&
 +                    Thread.currentThread() instanceof org.dreeam.leaf.async.locate.AsyncLocator.AsyncLocatorThread) {
-+                final java.util.concurrent.atomic.AtomicBoolean shouldReturn = new java.util.concurrent.atomic.AtomicBoolean(true);
++                final java.util.concurrent.atomic.AtomicBoolean shouldReturn = new java.util.concurrent.atomic.AtomicBoolean(false);
 +                CompletableFuture<Pair<BlockPos, Holder<Structure>>> futureEvent = net.minecraft.server.MinecraftServer.getServer().submit(() -> {
 +                    if (!event.callEvent()) {
 +                        shouldReturn.set(true);
