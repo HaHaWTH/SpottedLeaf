@@ -131,6 +131,105 @@ index ef0124ceb7cafd58c01c7f0b4b542f38a383ab88..3646810c21641559ee81084da8ac290c
              Level world = this.dolphin.level();
  
              if (this.dolphin.closeToNextPos() || this.dolphin.getNavigation().isDone()) {
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/EyeOfEnder.java b/src/main/java/net/minecraft/world/entity/projectile/EyeOfEnder.java
+index fca3786d0a3f99a3e61e7a4b2251361276eff9d7..cb4ff1e98418c651ef21f04f3c74cac7065031ae 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/EyeOfEnder.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/EyeOfEnder.java
+@@ -27,6 +27,7 @@ public class EyeOfEnder extends Entity implements ItemSupplier {
+     public double tz;
+     public int life;
+     public boolean surviveAfterDeath;
++    public boolean asyncLocator$locateTaskOngoing = false; // Leaf - Async locator
+ 
+     public EyeOfEnder(EntityType<? extends EyeOfEnder> type, Level world) {
+         super(type, world);
+@@ -114,6 +115,11 @@ public class EyeOfEnder extends Entity implements ItemSupplier {
+     @Override
+     public void tick() {
+         super.tick();
++        // Leaf start - Async locator
++        if (org.dreeam.leaf.config.modules.async.AsyncLocator.enabled && this.asyncLocator$locateTaskOngoing) {
++            return;
++        }
++        // Leaf end - Async locator
+         Vec3 vec3d = this.getDeltaMovement();
+         double d0 = this.getX() + vec3d.x;
+         double d1 = this.getY() + vec3d.y;
+diff --git a/src/main/java/net/minecraft/world/item/EnderEyeItem.java b/src/main/java/net/minecraft/world/item/EnderEyeItem.java
+index d8ce44a180f848f4c9c04967470c4359af979b2f..500c4a86500dd193d9b4f0b33c1cd53e42874876 100644
+--- a/src/main/java/net/minecraft/world/item/EnderEyeItem.java
++++ b/src/main/java/net/minecraft/world/item/EnderEyeItem.java
+@@ -113,20 +113,53 @@ public class EnderEyeItem extends Item {
+             user.startUsingItem(hand);
+             if (world instanceof ServerLevel) {
+                 ServerLevel worldserver = (ServerLevel) world;
+-                BlockPos blockposition = worldserver.findNearestMapStructure(StructureTags.EYE_OF_ENDER_LOCATED, user.blockPosition(), 100, false);
++                // Leaf start - Async locator
++                BlockPos blockposition;
++                if (org.dreeam.leaf.config.modules.async.AsyncLocator.enabled) {
++                    blockposition = BlockPos.ZERO;
++                } else {
++                    blockposition = worldserver.findNearestMapStructure(StructureTags.EYE_OF_ENDER_LOCATED, user.blockPosition(), 100, false);
++                }
++                // Leaf end - Async locator
+ 
+                 if (blockposition != null) {
+                     EyeOfEnder entityendersignal = new EyeOfEnder(world, user.getX(), user.getY(0.5D), user.getZ());
+-
++                    // Leaf start - Async locator
++                    final boolean isAsyncLocatorEnabled = org.dreeam.leaf.config.modules.async.AsyncLocator.enabled;
++                    if (isAsyncLocatorEnabled) {
++                        org.dreeam.leaf.async.locate.AsyncLocator.locate(
++                                worldserver,
++                                StructureTags.EYE_OF_ENDER_LOCATED,
++                                user.blockPosition(),
++                                100,
++                                false
++                        ).thenOnServerThread(pos -> {
++                            entityendersignal.asyncLocator$locateTaskOngoing = false;
++                            if (pos != null) {
++                                entityendersignal.signalTo(pos);
++                                CriteriaTriggers.USED_ENDER_EYE.trigger((ServerPlayer) user, pos);
++                                user.awardStat(Stats.ITEM_USED.get(this));
++                            } else {
++                                // Set the entity's life to long enough that it dies
++                                entityendersignal.life = Integer.MAX_VALUE - 100;
++                            }
++                        });
++                        entityendersignal.asyncLocator$locateTaskOngoing = true;
++                    }
++                    // Leaf end - Async locator
+                     entityendersignal.setItem(itemstack);
+-                    entityendersignal.signalTo(blockposition);
++                    // Leaf start - Async locator
++                    if (!isAsyncLocatorEnabled) {
++                        entityendersignal.signalTo(blockposition);
++                    }
++                    // Leaf end - Async locator
+                     world.gameEvent((Holder) GameEvent.PROJECTILE_SHOOT, entityendersignal.position(), GameEvent.Context.of((Entity) user));
+                     // CraftBukkit start
+                     if (!world.addFreshEntity(entityendersignal)) {
+                         return new InteractionResultHolder(InteractionResult.FAIL, itemstack);
+                     }
+                     // CraftBukkit end
+-                    if (user instanceof ServerPlayer) {
++                    if (!isAsyncLocatorEnabled && user instanceof ServerPlayer) { // Leaf - Async locator
+                         ServerPlayer entityplayer = (ServerPlayer) user;
+ 
+                         CriteriaTriggers.USED_ENDER_EYE.trigger(entityplayer, blockposition);
+@@ -136,7 +169,11 @@ public class EnderEyeItem extends Item {
+ 
+                     world.playSound((Player) null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENDER_EYE_LAUNCH, SoundSource.NEUTRAL, 1.0F, f);
+                     itemstack.consume(1, user);
+-                    user.awardStat(Stats.ITEM_USED.get(this));
++                    // Leaf start - Async locator
++                    if (!isAsyncLocatorEnabled) {
++                        user.awardStat(Stats.ITEM_USED.get(this));
++                    }
++                    // Leaf end - Async locator
+                     user.swing(hand, true);
+                     return InteractionResultHolder.success(itemstack);
+                 }
 diff --git a/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java b/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java
 index 00ed0d5ad535faa36111ab28bb0cf1317eb067ec..477aa4f069ab18de2c764f74dc26db52a95d6206 100644
 --- a/src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java
@@ -346,7 +445,7 @@ index 0000000000000000000000000000000000000000..b03c908d1e630d08ba91279886d24497
 \ No newline at end of file
 diff --git a/src/main/java/org/dreeam/leaf/config/modules/async/AsyncLocator.java b/src/main/java/org/dreeam/leaf/config/modules/async/AsyncLocator.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9c02fab33892ba0711b1cf7d63e343591173bdfd
+index 0000000000000000000000000000000000000000..33bf0155cac0776457f124f7815b7e9ecc2ef8da
 --- /dev/null
 +++ b/src/main/java/org/dreeam/leaf/config/modules/async/AsyncLocator.java
 @@ -0,0 +1,35 @@
@@ -368,10 +467,10 @@ index 0000000000000000000000000000000000000000..9c02fab33892ba0711b1cf7d63e34359
 +    @Override
 +    public void onLoaded() {
 +        config.addComment(getBasePath(), """
-+                ***Experimental feature, report any bugs you encountered!***
++                ***Experimental feature, report any bugs you encounter!***
 +                Whether or not asynchronous locator should be enabled.
 +                This offloads structure locating to other threads.
-+                Only for locate command and dolphin treasure finding currently.""");
++                Only for locate command, dolphin treasure finding and eye of ender currently.""");
 +        enabled = config.getBoolean(getBasePath() + ".enabled", enabled);
 +        asyncLocatorThreads = config.getInt(getBasePath() + ".threads", asyncLocatorThreads);
 +
