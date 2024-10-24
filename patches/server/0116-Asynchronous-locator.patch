@@ -6,23 +6,18 @@ Subject: [PATCH] Asynchronous locator
 This patch was ported from project: https://github.com/thebrightspark/AsyncLocator
 
 diff --git a/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java b/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
-index 11b7f15755dde766140c29bedca456c80d53293f..0b9a2448999826eef362589078688d6f5f69e4e6 100644
+index 11b7f15755dde766140c29bedca456c80d53293f..749d00449ac3f3c79bfc73a5517ea3a07675e447 100644
 --- a/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
 +++ b/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
-@@ -90,6 +90,13 @@ public class TickThread extends Thread {
+@@ -80,7 +80,7 @@ public class TickThread extends Thread {
+         this(run, name, ID_GENERATOR.incrementAndGet());
      }
  
-     public static boolean isTickThread() {
-+        // Leaf start - Async locator
-+        if (org.dreeam.leaf.config.modules.async.AsyncLocator.enabled) {
-+            Thread currentThread = Thread.currentThread();
-+            return currentThread instanceof TickThread ||
-+                    currentThread instanceof org.dreeam.leaf.async.locate.AsyncLocator.AsyncLocatorThread;
-+        }
-+        // Leaf end - Async locator
-         return Thread.currentThread() instanceof TickThread;
+-    private TickThread(final Runnable run, final String name, final int id) {
++    protected TickThread(final Runnable run, final String name, final int id) { // Leaf - private -> protected
+         super(run, name);
+         this.id = id;
      }
- 
 diff --git a/src/main/java/net/minecraft/server/commands/LocateCommand.java b/src/main/java/net/minecraft/server/commands/LocateCommand.java
 index 39f5deea47d8f573c3cfec5df431216ee806c32c..51994f272737f8754aac41dc0c55f43f45617519 100644
 --- a/src/main/java/net/minecraft/server/commands/LocateCommand.java
@@ -138,12 +133,13 @@ index ef0124ceb7cafd58c01c7f0b4b542f38a383ab88..3646810c21641559ee81084da8ac290c
              if (this.dolphin.closeToNextPos() || this.dolphin.getNavigation().isDone()) {
 diff --git a/src/main/java/org/dreeam/leaf/async/locate/AsyncLocator.java b/src/main/java/org/dreeam/leaf/async/locate/AsyncLocator.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..ab6fd96bb5a8fdbebf0d9a252fa4d17c6c37964e
+index 0000000000000000000000000000000000000000..7f2c97ab9cb53c312d021e16eded6ea0b48115c8
 --- /dev/null
 +++ b/src/main/java/org/dreeam/leaf/async/locate/AsyncLocator.java
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,160 @@
 +package org.dreeam.leaf.async.locate;
 +
++import ca.spottedleaf.moonrise.common.util.TickThread;
 +import com.google.common.util.concurrent.ThreadFactoryBuilder;
 +import com.mojang.datafixers.util.Pair;
 +import net.minecraft.core.BlockPos;
@@ -156,6 +152,7 @@ index 0000000000000000000000000000000000000000..ab6fd96bb5a8fdbebf0d9a252fa4d17c
 +import net.minecraft.world.level.levelgen.structure.Structure;
 +
 +import java.util.concurrent.*;
++import java.util.concurrent.atomic.AtomicInteger;
 +import java.util.function.Consumer;
 +
 +// Original project: https://github.com/thebrightspark/AsyncLocator
@@ -164,7 +161,16 @@ index 0000000000000000000000000000000000000000..ab6fd96bb5a8fdbebf0d9a252fa4d17c
 +
 +    private AsyncLocator() {}
 +
-+    public static class AsyncLocatorThread extends Thread {
++    public static class AsyncLocatorThread extends TickThread {
++        private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
++        public AsyncLocatorThread(Runnable run, String name) {
++            super(run, name, THREAD_COUNTER.incrementAndGet());
++        }
++
++        @Override
++        public void run() {
++            super.run();
++        }
 +    }
 +
 +    static {
@@ -172,15 +178,15 @@ index 0000000000000000000000000000000000000000..ab6fd96bb5a8fdbebf0d9a252fa4d17c
 +        LOCATING_EXECUTOR_SERVICE = Executors.newFixedThreadPool(
 +                threads,
 +                new ThreadFactoryBuilder()
-+                        .setNameFormat("Leaf Async Locator Thread - %d")
 +                        .setThreadFactory(
-+                                r -> new AsyncLocatorThread() {
++                                r -> new AsyncLocatorThread(r, "Leaf Async Locator Thread") {
 +                                    @Override
 +                                    public void run() {
 +                                        r.run();
 +                                    }
 +                                }
 +                        )
++                        .setNameFormat("Leaf Async Locator Thread - %d")
 +                        .setPriority(Thread.NORM_PRIORITY - 2)
 +                        .build()
 +        );
@@ -249,7 +255,6 @@ index 0000000000000000000000000000000000000000..ab6fd96bb5a8fdbebf0d9a252fa4d17c
 +            int searchRadius,
 +            boolean skipExistingChunks
 +    ) {
-+        long start = System.nanoTime();
 +        Pair<BlockPos, Holder<Structure>> foundPair = level.getChunkSource().getGenerator()
 +                .findNearestMapStructure(level, structureSet, pos, searchRadius, skipExistingChunks);
 +        completableFuture.complete(foundPair);
