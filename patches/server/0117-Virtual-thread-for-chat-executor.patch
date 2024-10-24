@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: HaHaWTH <102713261+HaHaWTH@users.noreply.github.com>
+Date: Fri, 25 Oct 2024 02:27:21 +0800
+Subject: [PATCH] Virtual thread for chat executor
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 37c377761b45eefab39164a7e714e585a02a4447..cca3945ef31b9696950f08164d8bbacaeaa36b4e 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -43,6 +43,7 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.concurrent.CompletableFuture;
+ import java.util.concurrent.Executor;
++import java.util.concurrent.Executors;
+ import java.util.concurrent.atomic.AtomicReference;
+ import java.util.function.BooleanSupplier;
+ import java.util.function.Consumer;
+@@ -2894,7 +2895,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     }
+ 
+     public final java.util.concurrent.ExecutorService chatExecutor = java.util.concurrent.Executors.newCachedThreadPool(
+-            new com.google.common.util.concurrent.ThreadFactoryBuilder().setDaemon(true).setNameFormat("Async Chat Thread - #%d").setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(net.minecraft.server.MinecraftServer.LOGGER)).build()); // Paper
++            new com.google.common.util.concurrent.ThreadFactoryBuilder().setDaemon(true).setNameFormat("Async Chat Thread - #%d").setThreadFactory(org.dreeam.leaf.config.modules.opt.VT4ChatExecutor.enabled ? Thread.ofVirtual().factory() : Executors.defaultThreadFactory()).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(net.minecraft.server.MinecraftServer.LOGGER)).build()); // Paper // Leaf - Virtual thread for chatExecutor
+ 
+     public final ChatDecorator improvedChatDecorator = new io.papermc.paper.adventure.ImprovedChatDecorator(this); // Paper - adventure
+     public ChatDecorator getChatDecorator() {
+diff --git a/src/main/java/org/dreeam/leaf/config/modules/opt/VT4ChatExecutor.java b/src/main/java/org/dreeam/leaf/config/modules/opt/VT4ChatExecutor.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..a00f559076f5efbaf72217c4a889f246fc5f60d4
+--- /dev/null
++++ b/src/main/java/org/dreeam/leaf/config/modules/opt/VT4ChatExecutor.java
+@@ -0,0 +1,19 @@
++package org.dreeam.leaf.config.modules.opt;
++
++import org.dreeam.leaf.config.ConfigModules;
++import org.dreeam.leaf.config.EnumConfigCategory;
++
++public class VT4ChatExecutor extends ConfigModules {
++
++    public String getBasePath() {
++        return EnumConfigCategory.PERF.getBaseKeyName();
++    }
++
++    public static boolean enabled = true;
++
++    @Override
++    public void onLoaded() {
++        enabled = config.getBoolean(getBasePath() + ".use-virtual-thread-for-async-chat-executor", enabled,
++                "Use the new Virtual Thread introduced in JDK 21 for Async Chat Executor.");
++    }
++}
