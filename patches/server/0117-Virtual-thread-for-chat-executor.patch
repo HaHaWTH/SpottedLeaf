@@ -5,23 +5,15 @@ Subject: [PATCH] Virtual thread for chat executor
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 37c377761b45eefab39164a7e714e585a02a4447..cca3945ef31b9696950f08164d8bbacaeaa36b4e 100644
+index 37c377761b45eefab39164a7e714e585a02a4447..09e55f62b4cea5b058e04356252f4f56957646b8 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -43,6 +43,7 @@ import java.util.Set;
- import java.util.UUID;
- import java.util.concurrent.CompletableFuture;
- import java.util.concurrent.Executor;
-+import java.util.concurrent.Executors;
- import java.util.concurrent.atomic.AtomicReference;
- import java.util.function.BooleanSupplier;
- import java.util.function.Consumer;
-@@ -2894,7 +2895,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -2894,7 +2894,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      }
  
      public final java.util.concurrent.ExecutorService chatExecutor = java.util.concurrent.Executors.newCachedThreadPool(
 -            new com.google.common.util.concurrent.ThreadFactoryBuilder().setDaemon(true).setNameFormat("Async Chat Thread - #%d").setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(net.minecraft.server.MinecraftServer.LOGGER)).build()); // Paper
-+            new com.google.common.util.concurrent.ThreadFactoryBuilder().setDaemon(true).setNameFormat("Async Chat Thread - #%d").setThreadFactory(org.dreeam.leaf.config.modules.opt.VT4ChatExecutor.enabled ? Thread.ofVirtual().factory() : Executors.defaultThreadFactory()).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(net.minecraft.server.MinecraftServer.LOGGER)).build()); // Paper // Leaf - Virtual thread for chatExecutor
++            new com.google.common.util.concurrent.ThreadFactoryBuilder().setDaemon(true).setNameFormat("Async Chat Thread - #%d").setThreadFactory(org.dreeam.leaf.config.modules.opt.VT4ChatExecutor.enabled ? Thread.ofVirtual().factory() : java.util.concurrent.Executors.defaultThreadFactory()).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(net.minecraft.server.MinecraftServer.LOGGER)).build()); // Paper // Leaf - Virtual thread for chatExecutor
  
      public final ChatDecorator improvedChatDecorator = new io.papermc.paper.adventure.ImprovedChatDecorator(this); // Paper - adventure
      public ChatDecorator getChatDecorator() {
